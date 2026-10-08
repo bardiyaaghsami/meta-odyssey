@@ -1,0 +1,11 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
+/*
+ * ODYSSEY STM32MP135D firmware configuration.
+ * DDR_SIZE matches DDR_MEM_SIZE in stm32mp13-ddr3-1x4Gb-1066-binF.dtsi
+ * and the 512 MiB memory node. The included fragments are the current
+ * STM32MP13 TF-A firmware-config files, not a copied register set.
+ */
+
+#define DDR_SIZE	0x20000000 /* 512MB */
+#include "stm32mp13-fw-config.dtsi"
+#include "stm32mp13-fw-config-mem-encrypt.dtsi"

@@ -1,0 +1,45 @@
+# Yocto / OpenSTLinux generated trees. This repository pins upstream
+# sources; it does not vendor them.
+/sources/
+/.repo/
+# /build is the setup.sh symlink. A trailing slash would match only a
+# directory and would let that symlink be committed.
+/build
+/build-*/
+/tmp/
+/tmp-*/
+/downloads/
+/sstate-cache/
+/oe-downloads/
+/oe-sstate-cache/
+/cache/
+/deploy/
+
+# Image and firmware artifacts, including copies left outside the
+# ignored directories above.
+*.raw
+*.wic
+*.ext4
+*.tar.xz
+*.tar.zst
+*.ubi
+*.ubifs
+*.dtb
+*.stm32
+*.uImage
+*.cpio
+*.cpio.gz
+*.img
+*.bin
+
+# BitBake and editor leftovers
+bitbake-cookerdaemon.log
+bitbake.lock
+*.pyc
+__pycache__/
+*~
+*.swp
+
+# setup.sh launcher and build logs
+/scripts/.repo-tool/
+/logs/

@@ -1,0 +1,45 @@
+// SPDX-License-Identifier: GPL-2.0-or-later OR BSD-3-Clause
+/*
+ * U-Boot extras for the ODYSSEY STM32MP135D.
+ * The Discovery kit fastboot and programmer GPIOs on PA13/PA14 are not
+ * used: PA13 is the board UART4 TX.
+ */
+
+#include "stm32mp13-u-boot.dtsi"
+
+/ {
+	aliases {
+		mmc0 = &sdmmc1;
+		mmc1 = &sdmmc2;
+		usb0 = &usbotg_hs;
+	};
+
+	config {
+		u-boot,mmc-env-partition = "u-boot-env";
+	};
+
+	fwu-mdata {
+		compatible = "u-boot,fwu-mdata-gpt";
+		fwu-mdata-store = <&sdmmc1>;
+	};
+};
+
+&sdmmc1 {
+	bootph-all;
+};
+
+&uart4 {
+	bootph-all;
+};
+
+&uart4_pins_odyssey {
+	bootph-all;
+
+	pins1 {
+		bootph-all;
+	};
+
+	pins2 {
+		bootph-all;
+	};
+};

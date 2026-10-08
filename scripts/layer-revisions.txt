@@ -1,0 +1,9 @@
+# path revision
+# Revisions setup.sh requires for the manifest tag in pins.env.
+layers/openembedded-core 52380df998b3a8fe6a091f8547434a3231320a8e
+layers/openembedded-core/bitbake b2404004135b669f8258c85c7b5aed4570a805c7
+layers/meta-openembedded 5124ac4a658899158f4a7a2ddf1d2ca931ec7d0e
+layers/meta-st/meta-st-openstlinux b0316f706bcf34e8449d43aba3c630030f2cc366
+layers/meta-st/meta-st-stm32mp 49046b2a0ad4dc29117025c94838b9befff86f23
+layers/meta-st/meta-st-stm32mp-addons ad667afe266eb1ca706bf92ea6d99cc9ec74d662
+layers/meta-st/scripts 8826802b453ef2ead61b07c7bc5ab525a405df04
