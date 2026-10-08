@@ -1,52 +1,23 @@
 # ODYSSEY STM32MP135D Yocto BSP
 
-Board support for the Seeed Studio ODYSSEY STM32MP135D (STM32MP135D,
-one Cortex-A7, 512 MiB DDR3L) on OpenSTLinux v6.2.1, Yocto Scarthgap 5.0.17.
+Board support for the Seeed Studio ODYSSEY STM32MP135D on OpenSTLinux
+v6.2.1 / Yocto Scarthgap. The layer in this repository is `meta-odyssey`:
+the machine configuration, the board device trees, and two bbappends.
+`scripts/setup.sh` fetches OpenSTLinux. Those upstream trees are not in git.
 
-`meta-odyssey` is the machine layer: machine configuration, board device
-trees, and two bbappends. OpenSTLinux itself is not in this git tree.
-`./scripts/setup.sh` fetches the pinned manifest into `sources/`. Download
-and sstate caches stay on the build machine and are gitignored.
+v0.1.0 boots Linux from SD. The checks that passed, and the ones that did
+not run, are in [docs/hardware.md](docs/hardware.md).
 
-## Build
+## Board
 
-Host packages, the AppArmor sysctl BitBake needs on Ubuntu 24.04, and the
-ST EULA variable are in [docs/build.md](docs/build.md).
+Seeed Studio ODYSSEY STM32MP135D (STM32MP135D, one Cortex-A7, 512 MiB
+DDR3L). Machine name `odyssey-stm32mp135d`.
 
-```bash
-./scripts/setup.sh
-./scripts/build.sh
-./scripts/create-sdcard.sh
-```
+SD is the only boot device in `BOOTDEVICE_LABELS`. eMMC is described and
+was detected; it is not a boot path in this release. LCD, backlight,
+touch, Qt, Weston as a product image, Web HMI, and Modbus are not included.
 
-That produces `st-image-core` and an SD raw image. It does not write a
-block device. Flashing is [docs/flashing.md](docs/flashing.md).
-
-## What was tested
-
-The SD image from this tree boots Linux. On that card:
-
-- UART4 console, `/dev/ttySTM0`, 115200 8N1
-- root filesystem mounted from SD
-- `end0` and `end1` report UP and LOWER_UP
-- eMMC shows up as a 3.5 GiB device
-- USB host controllers enumerate
-- `systemctl --failed` prints nothing
-
-Link state is not a traffic test. eMMC detection is not an eMMC boot.
-USB host enumeration is not a mass-storage test. OP-TEE, SCMI, CPUFreq,
-and thermal were checked on the previous image from this tree, before the
-Linux UART4 pinctrl change, and were not repeated. Suspend and resume
-were not tested. Details and checksums are in
-[docs/BUILD_VALIDATION_REPORT.md](docs/BUILD_VALIDATION_REPORT.md). Open
-items are in [docs/known-issues.md](docs/known-issues.md).
-
-LCD panel, backlight, touch, Qt, Weston as a product image, Web HMI, and
-Modbus are not part of v0.1.0. The boot device label is `sdcard` only.
-TF-A leaves IWDG2 disabled; see the known-issues note before treating that
-as a watchdog policy.
-
-## Baseline
+## Versions
 
 | Item | Value |
 | --- | --- |
@@ -60,31 +31,98 @@ as a watchdog policy.
 | U-Boot | v2023.10-stm32mp-r3.1 |
 | OP-TEE | 4.0.0-stm32mp-r3.1 |
 | Distro | `openstlinux-weston` |
-| Machine | `odyssey-stm32mp135d` |
 | Image | `st-image-core` |
 
-`setup.sh` checks these layer revisions and stops if a checkout differs:
-[manifests/openstlinux-6.2.1.md](manifests/openstlinux-6.2.1.md),
-`scripts/layer-revisions.txt`.
+`setup.sh` refuses a checkout that does not match
+`scripts/layer-revisions.txt`. The same pins are in
+[manifests/openstlinux-6.2.1.md](manifests/openstlinux-6.2.1.md).
 
-## Layout
+## Repository
 
 ```text
-meta-odyssey/     machine, board device trees, bbappends
+meta-odyssey/     machine, device trees, bbappends
 scripts/          setup, build, SD image, flash
-manifests/        pinned OpenSTLinux tag and layer revisions
-docs/             build, hardware, license, validation
+manifests/        pinned OpenSTLinux revisions
+docs/             build and hardware notes
 ```
 
-Pinmux and regulator notes: [docs/hardware.md](docs/hardware.md).
-Boot chain: [docs/architecture.md](docs/architecture.md).
+Collection `odyssey`, layer priority 8. Do not add a second layer that
+also ships `odyssey-stm32mp135d.conf`.
+
+## Quick start
+
+Packages, the AppArmor sysctl, and the ST EULA variable are in
+[docs/build.md](docs/build.md).
+
+```bash
+./scripts/setup.sh
+./scripts/build.sh
+./scripts/create-sdcard.sh
+```
+
+Those three commands only write files, including
+`stm32mp135d-odyssey-sdcard.raw`. They do not write a block device.
+Flashing is a separate step in [docs/build.md](docs/build.md).
+
+## Boot chain
+
+TF-A BL2 is the FSBL. It loads a FIP that contains OP-TEE and U-Boot.
+OP-TEE stays resident in secure world. U-Boot and Linux run in non-secure
+world and call it. OP-TEE does not exit when U-Boot starts.
+
+```mermaid
+flowchart TD
+    rom["STM32MP135D BootROM"]
+    tfa["TF-A BL2"]
+    fip["FIP"]
+    optee["OP-TEE, stays resident"]
+    uboot["U-Boot"]
+    linux["Linux 6.6"]
+    rootfs["st-image-core"]
+
+    rom --> tfa --> fip
+    fip --> optee
+    fip --> uboot
+    uboot --> linux --> rootfs
+    uboot -.-> optee
+    linux -.-> optee
+```
+
+DDR timings come from ST's `stm32mp13-ddr3-1x4Gb-1066-binF.dtsi`. This
+layer does not replace that file and does not program OTP. Pinmux, secure
+GPIO, regulators, and the two watchdogs are in
+[docs/hardware.md](docs/hardware.md).
+
+## Validated
+
+On the SD card built from this tree: Linux boots, `/dev/ttySTM0` works,
+the root filesystem is mounted, `end0` and `end1` show link up, eMMC
+enumerates, and the USB host controllers enumerate. Ethernet traffic, USB
+mass storage, suspend/resume, and eMMC boot were not tested. See
+[docs/hardware.md](docs/hardware.md).
 
 ## License
 
-Files written here are MIT ([LICENSE](LICENSE)). The board device trees
-keep their SPDX lines and name STMicroelectronics and the Seeed Studio /
-xogium trees they follow. Fetched OpenSTLinux stays under its own
-licenses. See [docs/licensing.md](docs/licensing.md).
+Files written here are MIT: [LICENSE](LICENSE), also
+`meta-odyssey/COPYING.MIT`. That covers the layer configuration, the
+bbappends, the scripts, and these docs. It does not cover OpenSTLinux or
+the board device trees. Leave the SPDX lines in those trees as they are.
 
-Patches belong in `meta-odyssey`, `scripts/`, and `docs/`. Do not commit
-`sources/`, download caches, or images. Do not program OTP or fuses.
+| File | SPDX-License-Identifier |
+| --- | --- |
+| `tf-a/stm32mp135d-odyssey.dts` | `(GPL-2.0+ OR BSD-3-Clause)` |
+| `tf-a/stm32mp135d-odyssey-fw-config.dts` | `(GPL-2.0+ OR BSD-3-Clause)` |
+| `optee/stm32mp135d-odyssey.dts` | `(GPL-2.0+ OR BSD-3-Clause)` |
+| `u-boot/stm32mp135d-odyssey.dts` | `(GPL-2.0+ OR BSD-3-Clause)` |
+| `linux/stm32mp135d-odyssey.dts` | `(GPL-2.0+ OR BSD-3-Clause)` |
+| `u-boot/stm32mp135d-odyssey-u-boot.dtsi` | `GPL-2.0-or-later OR BSD-3-Clause` |
+
+`GPL-2.0+` was not rewritten to `GPL-2.0-or-later`. The headers name ST
+`stm32mp135f-dk` and the Seeed Studio / xogium trees
+`v2.8-stm32mp-odyssey-r1` (TF-A) and `v6.1-stm32mp-odyssey-r4` (Linux).
+Those checkouts are not vendored.
+
+OpenSTLinux keeps its own licenses, including the ST EULA that
+`envsetup.sh` records. How to set that variable is in
+[docs/build.md](docs/build.md). This repository does not accept the EULA
+for you.
